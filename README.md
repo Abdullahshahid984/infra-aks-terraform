@@ -219,7 +219,3 @@ terraform output kube_config
 * Integrate with ArgoCD or Flux for GitOps
 
 ---
-
- With this setup, you can show clients a **secure, production-ready AKS Terraform stack** with **enterprise DevOps best practices**.
-
----
