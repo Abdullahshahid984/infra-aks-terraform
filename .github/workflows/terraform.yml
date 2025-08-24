@@ -1,0 +1,41 @@
+# .github/workflows/terraform.yml
+name: Terraform CI
+
+on:
+  push:
+    paths:
+      - '**/*.tf'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    env:
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: TerraformInit
+        run: terraform init -backend-config="resource_group_name=${{ secrets.TFSTATE_RG }}" -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE }}" -backend-config="container_name=${{ secrets.TFSTATE_CONTAINER }}" -backend-config="key=aks.terraform.tfstate"
+
+      - name: TerraformPlan
+        run: terraform plan -out=tfplan -var="rg_name=${{ secrets.TF_RG_NAME }}" -var="location=${{ secrets.TF_LOCATION }}" || true
+
+      - name: TerraformApply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
